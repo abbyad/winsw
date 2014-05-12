@@ -13,6 +13,9 @@ using System.Xml;
 using System.Threading;
 using Microsoft.Win32;
 using System.Management;
+//using System.Net;
+using System.Net.NetworkInformation;
+//using System.Text;
 
 namespace winsw
 {
@@ -400,7 +403,19 @@ namespace winsw
             StartThread(delegate()
             {
                 string msg = process.Id + " - " + process.StartInfo.FileName + " " + process.StartInfo.Arguments;
-                process.WaitForExit();
+
+                if (descriptor.MonitorURL != null)
+                {
+                    // Give time for process to start. Should be at least as long as the StopTimeout.
+                    // Perhaps worth having a separate value from config file
+                    Thread.Sleep(Convert.ToInt32(descriptor.StopTimeout.TotalMilliseconds));
+
+                    // Monitor ping instead of waiting for exit
+                    PingMonitor(descriptor.MonitorURL, descriptor.MonitorRetries, Convert.ToInt32(descriptor.MonitorInterval.TotalMilliseconds));
+                }
+                else {
+                    process.WaitForExit();
+                }
 
                 try
                 {
@@ -411,6 +426,7 @@ namespace winsw
                     else
                     {
                         LogEvent("Child process [" + msg + "] finished with " + process.ExitCode, EventLogEntryType.Warning);
+                        WriteEvent("Warning: " + process.Id + " finished unexpectedly [" + process.ExitCode + "]");
                         // if we finished orderly, report that to SCM.
                         // by not reporting unclean shutdown, we let Windows SCM to decide if it wants to
                         // restart the service automatically
@@ -645,6 +661,38 @@ namespace winsw
                 }
             }
         }
+        private static void PingMonitor(string hostNameOrAddress, int retries, int interval)
+        {
+            int attemptsRemaining = retries;
+            Ping pingSender = new Ping();
+            PingOptions options = new PingOptions();
 
+            // Use the default Ttl value which is 128,
+            // but change the fragmentation behavior.
+            options.DontFragment = true;
+
+            // Create a buffer of 32 bytes of data to be transmitted.
+            string data = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+            byte[] buffer = Encoding.ASCII.GetBytes(data);
+            int timeout = 120;  // in milliseconds
+            PingReply reply;
+
+            while (attemptsRemaining > 0)
+            {
+                reply = pingSender.Send(hostNameOrAddress, timeout, buffer, options);
+                if (reply.Status == IPStatus.Success)
+                {
+                    attemptsRemaining = retries;
+                    // WriteThreadEvent(Path.Combine(descriptor.LogDirectory, descriptor.BaseName + ".thread.log"), "Ping to " + reply.Address.ToString() + " RoundTrip time: " + reply.RoundtripTime.ToString());
+                }
+                else
+                {
+                    attemptsRemaining--;
+                    // Message:Object reference not set to an instance of an object.
+                    // WriteThreadEvent(Path.Combine(descriptor.LogDirectory, descriptor.BaseName + ".thread.log"), "Ping to " + reply.Address.ToString() + " failed [" + reply.Status.ToString() + "]. Retries remaining: " + retries.ToString());
+                }
+                Thread.Sleep(interval);
+            }
+        }
     }
 }
