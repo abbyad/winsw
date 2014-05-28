@@ -597,39 +597,5 @@ namespace winsw
                 return (ProcessPriorityClass)Enum.Parse(typeof(ProcessPriorityClass), p, true);
             }
         }
-
-        /// <summary>
-        /// If present will monitor response on URL instead of process activity
-        /// If element is present the monitoring will be done by pinging the value *instead of* waiting for the executed process to exit
-        /// </summary>
-        public string MonitorURL
-        {
-            get
-            {
-                return SingleElement("monitorurl");
-            }
-        }
-
-        /// <summary>
-        /// When monitoring URL, number of seconds between attempts to access host
-        /// </summary>
-        public TimeSpan MonitorInterval
-        {
-            get
-            {
-                return SingleTimeSpanElement(dom, "monitorinterval", TimeSpan.FromSeconds(10));
-            }
-        }
-
-        /// <summary>
-        /// When monitoring URL, number of consecutive failed communications before stopping monitor thread
-        /// </summary>
-        public int MonitorRetries
-        {
-            get
-            {
-                return SingleIntElement(dom, "monitorretries", 3);
-            }
-        }
     }
 }
