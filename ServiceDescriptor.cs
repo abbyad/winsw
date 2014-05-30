@@ -179,6 +179,17 @@ namespace winsw
         }
 
         /// <summary>
+        /// Optionally specify a different Path to an executable to shutdown the service.
+        /// </summary>
+        public string ControlExecutable
+        {
+            get
+            {
+                return SingleElement("controlexecutable");
+            }
+        }
+
+        /// <summary>
         /// Arguments or multiple optional argument elements which overrule the arguments element.
         /// </summary>
         public string Arguments
@@ -224,6 +235,17 @@ namespace winsw
             get
             {
                 return AppendTags("stopargument");
+            }
+        }
+
+        /// <summary>
+        /// Multiple optional controlargument elements.
+        /// </summary>
+        public string Controlarguments
+        {
+            get
+            {
+                return AppendTags("controlargument");
             }
         }
 

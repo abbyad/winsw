@@ -130,6 +130,23 @@ namespace winsw
             logAppender.log(process.StandardOutput.BaseStream, process.StandardError.BaseStream);
         }
 
+        /// <summary>
+        /// Handle the creation of the logfiles based on the optional logmode setting.
+        /// </summary>
+        private void HandleLogfiles(Process p)
+        {
+            string logDirectory = descriptor.LogDirectory;
+
+            if (!Directory.Exists(logDirectory))
+            {
+                Directory.CreateDirectory(logDirectory);
+            }
+
+            LogHandler logAppender = descriptor.LogHandler;
+            logAppender.EventLogger = this;
+            logAppender.log(p.StandardOutput.BaseStream, p.StandardError.BaseStream);
+        }
+        
         public void LogEvent(String message)
         {
             if (systemShuttingdown)
@@ -249,6 +266,46 @@ namespace winsw
             {
                 WriteEvent("Stop exception", ex);
             }
+        }
+
+        // Control command passthrough
+        protected override void OnCustomCommand(int command)
+        {
+            string controlarguments = descriptor.Controlarguments;
+
+            if (controlarguments == null)
+            {
+                controlarguments = descriptor.Arguments + " " + command;
+            }
+            else
+            {
+                controlarguments = descriptor.Arguments + " " + controlarguments + " " + command;
+            }
+
+            LogEvent("Control command: " + descriptor.Executable + ' ' + controlarguments);
+            WriteEvent("Control command: " + descriptor.Executable + ' ' + controlarguments);
+
+            Process controlProcess = new Process();
+            String executable = descriptor.ControlExecutable;
+
+            if (executable == null)
+            {
+                executable = descriptor.Executable;
+            }
+
+            StartProcess(controlProcess, controlarguments, executable);
+
+            LogEvent("Starting " + executable + ' ' + controlarguments); 
+            // WriteEvent("WaitForProcessToExit " + process.Id + "+" + stopProcess.Id);
+
+            // send stdout and stderr to its respective output file.
+            HandleLogfiles(controlProcess);
+
+            controlProcess.StandardInput.Close(); // nothing for you to read!
+
+            // WaitForProcessToExit(controlProcess);
+            // SignalShutdownComplete();
+
         }
 
         /// <summary>
