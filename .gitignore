@@ -2,3 +2,4 @@ bin
 obj
 *.suo
 *.p12
+Certificates/password.txt
