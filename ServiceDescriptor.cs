@@ -179,6 +179,17 @@ namespace winsw
         }
 
         /// <summary>
+        /// Optionally specify a different Path to an executable to shutdown the service.
+        /// </summary>
+        public string ControlExecutable
+        {
+            get
+            {
+                return SingleElement("controlexecutable");
+            }
+        }
+
+        /// <summary>
         /// Arguments or multiple optional argument elements which overrule the arguments element.
         /// </summary>
         public string Arguments
@@ -224,6 +235,17 @@ namespace winsw
             get
             {
                 return AppendTags("stopargument");
+            }
+        }
+
+        /// <summary>
+        /// Multiple optional controlargument elements.
+        /// </summary>
+        public string Controlarguments
+        {
+            get
+            {
+                return AppendTags("controlargument");
             }
         }
 
@@ -595,40 +617,6 @@ namespace winsw
                 if (p == null) return ProcessPriorityClass.Normal;  // default value
 
                 return (ProcessPriorityClass)Enum.Parse(typeof(ProcessPriorityClass), p, true);
-            }
-        }
-
-        /// <summary>
-        /// If present will monitor response on URL instead of process activity
-        /// If element is present the monitoring will be done by pinging the value *instead of* waiting for the executed process to exit
-        /// </summary>
-        public string MonitorURL
-        {
-            get
-            {
-                return SingleElement("monitorurl");
-            }
-        }
-
-        /// <summary>
-        /// When monitoring URL, number of seconds between attempts to access host
-        /// </summary>
-        public TimeSpan MonitorInterval
-        {
-            get
-            {
-                return SingleTimeSpanElement(dom, "monitorinterval", TimeSpan.FromSeconds(10));
-            }
-        }
-
-        /// <summary>
-        /// When monitoring URL, number of consecutive failed communications before stopping monitor thread
-        /// </summary>
-        public int MonitorRetries
-        {
-            get
-            {
-                return SingleIntElement(dom, "monitorretries", 3);
             }
         }
     }

@@ -13,9 +13,6 @@ using System.Xml;
 using System.Threading;
 using Microsoft.Win32;
 using System.Management;
-//using System.Net;
-using System.Net.NetworkInformation;
-//using System.Text;
 
 namespace winsw
 {
@@ -133,6 +130,23 @@ namespace winsw
             logAppender.log(process.StandardOutput.BaseStream, process.StandardError.BaseStream);
         }
 
+        /// <summary>
+        /// Handle the creation of the logfiles based on the optional logmode setting.
+        /// </summary>
+        private void HandleLogfiles(Process p)
+        {
+            string logDirectory = descriptor.LogDirectory;
+
+            if (!Directory.Exists(logDirectory))
+            {
+                Directory.CreateDirectory(logDirectory);
+            }
+
+            LogHandler logAppender = descriptor.LogHandler;
+            logAppender.EventLogger = this;
+            logAppender.log(p.StandardOutput.BaseStream, p.StandardError.BaseStream);
+        }
+        
         public void LogEvent(String message)
         {
             if (systemShuttingdown)
@@ -252,6 +266,46 @@ namespace winsw
             {
                 WriteEvent("Stop exception", ex);
             }
+        }
+
+        // Control command passthrough
+        protected override void OnCustomCommand(int command)
+        {
+            string controlarguments = descriptor.Controlarguments;
+
+            if (controlarguments == null)
+            {
+                controlarguments = descriptor.Arguments + " " + command;
+            }
+            else
+            {
+                controlarguments = descriptor.Arguments + " " + controlarguments + " " + command;
+            }
+
+            LogEvent("Control command: " + descriptor.Executable + ' ' + controlarguments);
+            WriteEvent("Control command: " + descriptor.Executable + ' ' + controlarguments);
+
+            Process controlProcess = new Process();
+            String executable = descriptor.ControlExecutable;
+
+            if (executable == null)
+            {
+                executable = descriptor.Executable;
+            }
+
+            StartProcess(controlProcess, controlarguments, executable);
+
+            LogEvent("Starting " + executable + ' ' + controlarguments); 
+            // WriteEvent("WaitForProcessToExit " + process.Id + "+" + stopProcess.Id);
+
+            // send stdout and stderr to its respective output file.
+            HandleLogfiles(controlProcess);
+
+            controlProcess.StandardInput.Close(); // nothing for you to read!
+
+            // WaitForProcessToExit(controlProcess);
+            // SignalShutdownComplete();
+
         }
 
         /// <summary>
@@ -403,19 +457,7 @@ namespace winsw
             StartThread(delegate()
             {
                 string msg = process.Id + " - " + process.StartInfo.FileName + " " + process.StartInfo.Arguments;
-
-                if (descriptor.MonitorURL != null)
-                {
-                    // Give time for process to start. Should be at least as long as the StopTimeout.
-                    // Perhaps worth having a separate value from config file
-                    Thread.Sleep(Convert.ToInt32(descriptor.StopTimeout.TotalMilliseconds));
-
-                    // Monitor ping instead of waiting for exit
-                    PingMonitor(descriptor.MonitorURL, descriptor.MonitorRetries, Convert.ToInt32(descriptor.MonitorInterval.TotalMilliseconds));
-                }
-                else {
-                    process.WaitForExit();
-                }
+                process.WaitForExit();
 
                 try
                 {
@@ -426,7 +468,6 @@ namespace winsw
                     else
                     {
                         LogEvent("Child process [" + msg + "] finished with " + process.ExitCode, EventLogEntryType.Warning);
-                        WriteEvent("Warning: " + process.Id + " finished unexpectedly [" + process.ExitCode + "]");
                         // if we finished orderly, report that to SCM.
                         // by not reporting unclean shutdown, we let Windows SCM to decide if it wants to
                         // restart the service automatically
@@ -661,38 +702,6 @@ namespace winsw
                 }
             }
         }
-        private static void PingMonitor(string hostNameOrAddress, int retries, int interval)
-        {
-            int attemptsRemaining = retries;
-            Ping pingSender = new Ping();
-            PingOptions options = new PingOptions();
 
-            // Use the default Ttl value which is 128,
-            // but change the fragmentation behavior.
-            options.DontFragment = true;
-
-            // Create a buffer of 32 bytes of data to be transmitted.
-            string data = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-            byte[] buffer = Encoding.ASCII.GetBytes(data);
-            int timeout = 120;  // in milliseconds
-            PingReply reply;
-
-            while (attemptsRemaining > 0)
-            {
-                reply = pingSender.Send(hostNameOrAddress, timeout, buffer, options);
-                if (reply.Status == IPStatus.Success)
-                {
-                    attemptsRemaining = retries;
-                    // WriteThreadEvent(Path.Combine(descriptor.LogDirectory, descriptor.BaseName + ".thread.log"), "Ping to " + reply.Address.ToString() + " RoundTrip time: " + reply.RoundtripTime.ToString());
-                }
-                else
-                {
-                    attemptsRemaining--;
-                    // Message:Object reference not set to an instance of an object.
-                    // WriteThreadEvent(Path.Combine(descriptor.LogDirectory, descriptor.BaseName + ".thread.log"), "Ping to " + reply.Address.ToString() + " failed [" + reply.Status.ToString() + "]. Retries remaining: " + retries.ToString());
-                }
-                Thread.Sleep(interval);
-            }
-        }
     }
 }

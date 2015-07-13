@@ -2,12 +2,12 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("Windows Service Wrapper")]
-[assembly: AssemblyDescription("Allows arbitrary process to run as a Windows service by wrapping it")]
+[assembly: AssemblyTitle("Medic Mobile's Windows Service Wrapper")]
+[assembly: AssemblyDescription("Allows the Medic Mobile Operating System to be run as a Windows service")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("CloudBees, Inc.")]
+[assembly: AssemblyCompany("Medic Mobile, Inc")]
 [assembly: AssemblyProduct("Windows Service Wrapper")]
-[assembly: AssemblyCopyright("Copyright 2008-2013 Sun Microsystems, Inc., CloudBees, Inc.")]
+[assembly: AssemblyCopyright("Copyright 2008-2015 Medic Mobile, Inc, Sun Microsystems, Inc., CloudBees, Inc.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -29,5 +29,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.1.0.0")]
-[assembly: AssemblyFileVersion("1.1.0.0")]
+[assembly: AssemblyVersion("1.1.0.1")]
+[assembly: AssemblyFileVersion("1.1.0.1")]
